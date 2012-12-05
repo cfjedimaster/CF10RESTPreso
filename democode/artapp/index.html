@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+   //Modify to match your port, etc
+   var service = "http://localhost/rest/RestPreso/artService";
+
+   function getAndDisplayArt() {
+      //I get all the art
+      $.get(service, {}, function(res,code) {
+         var s = "";
+         for(var i=0;i<res.DATA.length;i++) {
+            s+= "<li data-artid='"+res.DATA[i][0]+"'>"+res.DATA[i][1]+"</li>";
+         }
+         $("#users").html(s);
+      },"json");
+   };
+
+   //on load, run the display
+   getAndDisplayArt();
+
+   //I listen for clicks on the names to get details
+   $("body").on("click", "ul#users li",  function(e) {
+      var id = $(this).data("artid");
+
+      $.get(service + "/" + id, {}, function(artPiece, code) {
+         var s = "<h2>" + artPiece.name + "</h2>";
+         s+= "<p>"+artPiece.description+"</p>";
+         s += "<img src='/cfdocs/images/artgallery/"+artPiece.image+"'>";
+         //build a simple form 
+         s += "<p><input type='text' class='priceEditField' value='"+artPiece.price+"'> ";
+         s += "<input type='button' class='updatePriceButton' data-artid='"+artPiece.id+"' value='Update Price'><br/>";
+         s += "<input type='button' class='artDelete' data-artid='"+artPiece.id+"' value='Delete (No Recovery!)'>";
+         $("#detail").html(s);
+      },"json");
+
+   });
+
+   //I let you update the price
+   $("body").on("click", ".updatePriceButton", function(e) {
+      var id = $(this).data("artid");
+      var newprice = $(".priceEditField").val();
+
+      $.ajax(service + "/" + id, {
+         type:"put",
+         complete:function(xhr,status) {
+            console.log("success");
+            //We could do something more here...
+         },
+         data:{price:newprice}
+      });
+
+   });
+
+   //I let you delete art
+   $("body").on("click", ".artDelete", function(e) {
+      var id = $(this).data("artid");
+
+      $.ajax(service + "/" + id, {
+         type:"delete",
+         complete:function(xhr,status) {
+            $("#detail").html("");
+            getAndDisplayArt();
+         }
+      });
+
+   });
+
+});
+</script>
+
+<style>
+ul#users {
+   float:left;
+}
+
+li[data-artid] {
+   cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+   <h2>Art</h2>
+   <ul id="users"></ul>
+
+   <div id="detail"></div>
+
+</body>
+</html>
